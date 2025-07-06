@@ -432,6 +432,59 @@ class SmsService {
       listenInBackground: false,
     );
   }
+
+  /// Re-classify existing transactions using the improved logic
+  Future<int> reclassifyExistingTransactions() async {
+    try {
+      _logger.i('Starting re-classification of existing transactions...');
+
+      // Get all existing transactions that were created from SMS
+      final transactions = await _databaseHelper.query(
+        'transactions',
+        where: 'sms_content IS NOT NULL',
+      );
+
+      int reclassifiedCount = 0;
+
+      for (final transactionMap in transactions) {
+        final transaction = Transaction.fromMap(transactionMap);
+        final smsContent = transaction.smsContent;
+
+        if (smsContent == null || smsContent.isEmpty) continue;
+
+        // Determine the correct transaction type using improved logic
+        final correctType =
+            _intelligentClassifier.determineTransactionType(smsContent);
+
+        // Check if the current type is wrong
+        if (transaction.type != correctType) {
+          _logger.i(
+              'Re-classifying transaction ${transaction.id}: ${transaction.type} -> $correctType');
+
+          // Update the transaction in database
+          await _databaseHelper.update(
+            'transactions',
+            {
+              'transaction_type':
+                  correctType == TransactionType.income ? 'income' : 'expense',
+              'updated_at': DateTime.now().toIso8601String(),
+            },
+            where: 'id = ?',
+            whereArgs: [transaction.id],
+          );
+
+          reclassifiedCount++;
+        }
+      }
+
+      _logger.i(
+          'Re-classification complete. $reclassifiedCount transactions updated.');
+      return reclassifiedCount;
+    } catch (e) {
+      _logger.e('Error during re-classification: $e');
+      return 0;
+    }
+  }
 }
 
 /// SMS Pattern model for parsing different bank formats

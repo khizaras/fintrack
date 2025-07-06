@@ -50,6 +50,10 @@ class ScanSmsForTransactions extends TransactionEvent {
   const ScanSmsForTransactions();
 }
 
+class ReclassifyExistingTransactions extends TransactionEvent {
+  const ReclassifyExistingTransactions();
+}
+
 class ClearAllTransactions extends TransactionEvent {
   const ClearAllTransactions();
 }
@@ -170,6 +174,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     on<LoadTransactionStats>(_onLoadTransactionStats);
     on<ScanSMSMessages>(_onScanSMSMessages);
     on<ScanSmsForTransactions>(_onScanSmsForTransactions);
+    on<ReclassifyExistingTransactions>(_onReclassifyExistingTransactions);
     on<ClearAllTransactions>(_onClearAllTransactions);
     on<AddTransaction>(_onAddTransaction);
     on<UpdateTransaction>(_onUpdateTransaction);
@@ -385,6 +390,27 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       add(const LoadTransactions()); // Reload transactions
     } catch (e) {
       emit(TransactionError('Failed to delete transaction: $e'));
+    }
+  }
+
+  Future<void> _onReclassifyExistingTransactions(
+    ReclassifyExistingTransactions event,
+    Emitter<TransactionState> emit,
+  ) async {
+    try {
+      emit(const TransactionLoading());
+
+      // Re-classify existing transactions
+      final reclassifiedCount =
+          await _smsService.reclassifyExistingTransactions();
+
+      // Reload transactions to show updated classifications
+      add(const LoadTransactions());
+
+      // Note: We could emit a specific success state here if needed
+      // For now, LoadTransactions will handle the emission
+    } catch (e) {
+      emit(TransactionError('Failed to re-classify transactions: $e'));
     }
   }
 }

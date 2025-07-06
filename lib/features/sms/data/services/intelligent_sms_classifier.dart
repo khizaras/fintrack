@@ -170,38 +170,111 @@ class IntelligentSmsClassifier {
   TransactionType determineTransactionType(String smsContent) {
     final content = smsContent.toLowerCase();
 
-    // Score-based approach for better accuracy
+    // Priority 1: Look for primary transaction indicators at the beginning of SMS
+    // Bank SMS typically start with the main action
+    final words = content.split(' ');
+
+    // Check the first 10 words for primary transaction indicators
+    final primarySection = words.take(10).join(' ');
+
+    // Primary debit indicators (highest priority)
+    if (primarySection.contains('debited') ||
+        primarySection.contains('debit') ||
+        primarySection.contains('withdrawn') ||
+        primarySection.contains('paid')) {
+      _logger.d('Primary debit indicator found: debited/withdrawn/paid');
+      return TransactionType.expense;
+    }
+
+    // Primary credit indicators (highest priority)
+    if (primarySection.contains('credited to your') ||
+        primarySection.contains('credited with') ||
+        primarySection.contains('credited rs') ||
+        primarySection.startsWith('credited') ||
+        primarySection.contains('deposited in your') ||
+        primarySection.contains('received in your')) {
+      _logger.d(
+          'Primary credit indicator found: credited/deposited to your account');
+      return TransactionType.income;
+    }
+
+    // Priority 2: Contextual analysis - Check for account-specific patterns
+    if (content.contains('acct') ||
+        content.contains('account') ||
+        content.contains('a/c')) {
+      // Pattern: "Account XXX debited" = expense
+      if (RegExp(r'(acct|account|a/c).{0,20}debited').hasMatch(content)) {
+        _logger.d('Account debited pattern found');
+        return TransactionType.expense;
+      }
+
+      // Pattern: "Account XXX credited" = income
+      if (RegExp(r'(acct|account|a/c).{0,20}credited').hasMatch(content)) {
+        _logger.d('Account credited pattern found');
+        return TransactionType.income;
+      }
+    }
+
+    // Priority 3: Amount-based patterns
+    final amountPattern =
+        RegExp(r'rs\.?\s*(\d+(?:,\d+)*(?:\.\d{2})?)', caseSensitive: false);
+    final amountMatch = amountPattern.firstMatch(content);
+
+    if (amountMatch != null) {
+      final amountIndex = content.indexOf(amountMatch.group(0)!);
+      final beforeAmount = content.substring(0, amountIndex);
+      final afterAmount =
+          content.substring(amountIndex + amountMatch.group(0)!.length);
+
+      // Check words immediately before amount
+      if (beforeAmount.endsWith('debited for') ||
+          beforeAmount.endsWith('paid') ||
+          beforeAmount.endsWith('spent')) {
+        _logger.d('Expense pattern before amount found');
+        return TransactionType.expense;
+      }
+
+      // Check words immediately after amount
+      if (afterAmount.startsWith(' credited') ||
+          afterAmount.startsWith(' deposited') ||
+          afterAmount.startsWith(' received')) {
+        _logger.d('Income pattern after amount found');
+        return TransactionType.income;
+      }
+    }
+
+    // Priority 4: Score-based approach for edge cases
     int expenseScore = 0;
     int incomeScore = 0;
 
     for (final entry in _transactionTypeKeywords.entries) {
       if (content.contains(entry.key)) {
+        final weight = _getKeywordWeight(entry.key);
+
+        // Reduce weight for secondary mentions (not in primary context)
+        final adjustedWeight = _isSecondaryMention(content, entry.key)
+            ? (weight * 0.3).round()
+            : weight;
+
         if (entry.value == TransactionType.expense) {
-          expenseScore += _getKeywordWeight(entry.key);
+          expenseScore += adjustedWeight;
         } else {
-          incomeScore += _getKeywordWeight(entry.key);
+          incomeScore += adjustedWeight;
         }
       }
     }
 
-    // Handle complex cases like "debited from your account and credited to recipient"
+    // Handle specific complex cases
     if (content.contains('debited') && content.contains('your account')) {
-      expenseScore += 10; // High weight for money leaving your account
+      expenseScore += 15; // Very high weight for money leaving your account
     }
 
-    if (content.contains('credited') && content.contains('to recipient')) {
-      expenseScore += 5; // This is still an expense for you
-    }
-
-    // Check for specific patterns
-    if (content.contains('payment successful') ||
-        content.contains('transaction successful')) {
-      expenseScore += 3;
-    }
-
-    if (content.contains('amount received') ||
-        content.contains('money credited')) {
-      incomeScore += 5;
+    if (content.contains('credited') &&
+        content.contains('call') &&
+        content.contains('dispute')) {
+      // This is likely a dispute message, not the main transaction
+      expenseScore +=
+          5; // Slight preference for expense if other indicators suggest it
     }
 
     _logger.d(
@@ -212,17 +285,58 @@ class IntelligentSmsClassifier {
         : TransactionType.income;
   }
 
-  /// Get weight for keywords based on their reliability
+  /// Check if a keyword mention is secondary (e.g., in dispute context)
+  bool _isSecondaryMention(String content, String keyword) {
+    final keywordIndex = content.indexOf(keyword);
+    if (keywordIndex == -1) return false;
+
+    // Check context around the keyword
+    final contextStart = (keywordIndex - 50).clamp(0, content.length);
+    final contextEnd =
+        (keywordIndex + keyword.length + 50).clamp(0, content.length);
+    final context = content.substring(contextStart, contextEnd);
+
+    // Keywords that indicate secondary mention
+    final secondaryIndicators = [
+      'call',
+      'dispute',
+      'helpline',
+      'contact',
+      'for dispute',
+      'customer care',
+      'support',
+      'query',
+      'complaint'
+    ];
+
+    return secondaryIndicators.any((indicator) => context.contains(indicator));
+  }
+
+  /// Get weight for keywords based on their reliability and context
   int _getKeywordWeight(String keyword) {
     switch (keyword) {
+      // Primary transaction indicators (highest weight)
       case 'debited':
+      case 'withdrawn':
+        return 10;
       case 'credited':
-        return 5;
+      case 'deposited':
+        return 10;
+
+      // Secondary transaction indicators
       case 'paid':
       case 'received':
-        return 4;
+        return 6;
       case 'spent':
-      case 'withdrawn':
+      case 'charged':
+        return 5;
+      case 'billed':
+      case 'purchase':
+        return 4;
+
+      // Weaker indicators
+      case 'transferred to':
+      case 'transferred from':
         return 3;
       default:
         return 2;

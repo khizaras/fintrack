@@ -526,9 +526,22 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
           case 'clear':
             _showClearDatabaseDialog();
             break;
+          case 'reclassify':
+            _showReclassifyDialog();
+            break;
         }
       },
       itemBuilder: (BuildContext context) => [
+        PopupMenuItem<String>(
+          value: 'reclassify',
+          child: Row(
+            children: [
+              Icon(Icons.auto_fix_high, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Fix Transaction Types'),
+            ],
+          ),
+        ),
         PopupMenuItem<String>(
           value: 'clear',
           child: Row(
@@ -831,6 +844,82 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
               foregroundColor: Colors.white,
             ),
             child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReclassifyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.auto_fix_high, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Fix Transaction Types'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will re-analyze all SMS transactions and fix any incorrectly classified income/expense types.',
+              style: TextStyle(fontSize: 14),
+            ),
+            SizedBox(height: 12),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Example: "Account debited ... credited call for dispute" will be correctly classified as an expense.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              context
+                  .read<TransactionBloc>()
+                  .add(const ReclassifyExistingTransactions());
+
+              // Show a snackbar to inform user
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Re-classifying transactions...'),
+                  backgroundColor: Colors.blue,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Fix Types'),
           ),
         ],
       ),
