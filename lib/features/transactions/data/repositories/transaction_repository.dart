@@ -1,6 +1,5 @@
 import '../../../../core/database/database_helper.dart';
 import '../../../transactions/domain/entities/transaction.dart';
-import '../../../transactions/domain/entities/category.dart';
 
 class TransactionRepository {
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
@@ -175,6 +174,17 @@ class TransactionRepository {
     }
 
     await batch.commit();
+  }
+
+  /// Get transactions by type (income/expense)
+  Future<List<Transaction>> getTransactionsByType(TransactionType type) async {
+    final maps = await _databaseHelper.query(
+      'transactions',
+      where: 'type = ?',
+      whereArgs: [type.name],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => Transaction.fromMap(map)).toList();
   }
 }
 

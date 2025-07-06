@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../home/presentation/pages/home_page.dart';
-import '../../../transactions/presentation/pages/transactions_page.dart';
+import '../../../home/presentation/pages/modern_home_page.dart';
+import '../../../transactions/presentation/pages/modern_transactions_page.dart';
 import '../../../budgets/presentation/pages/budgets_page.dart';
 import '../../../insights/presentation/pages/insights_page.dart';
 
@@ -17,8 +17,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const HomePage(),
-    const TransactionsPage(),
+    const ModernHomePage(),
+    const ModernTransactionsPage(),
     const BudgetsPage(),
     const InsightsPage(),
   ];

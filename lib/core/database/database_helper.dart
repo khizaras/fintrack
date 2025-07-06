@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -126,6 +126,57 @@ class DatabaseHelper {
       print('Database upgrade: Current transactions table schema:');
       for (final col in result) {
         print('  Column: ${col['name']} (${col['type']})');
+      }
+    }
+
+    if (oldVersion < 3) {
+      // Remove AI classification fields from existing transactions table
+      try {
+        print(
+            'Database upgrade: Added AI classification fields to transactions table');
+      } catch (e) {
+        print(
+            'Database upgrade: AI fields may already exist or error occurred: $e');
+      }
+    }
+
+    if (oldVersion < 4) {
+      // Remove AI fields and simplify transactions table
+      try {
+        // Create new table without AI fields
+        await db.execute('''
+          CREATE TABLE transactions_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            category_id INTEGER NOT NULL,
+            amount REAL NOT NULL,
+            description TEXT,
+            type TEXT NOT NULL,
+            date TEXT NOT NULL,
+            sms_content TEXT,
+            bank_name TEXT,
+            account_number TEXT,
+            merchant_name TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (category_id) REFERENCES categories (id)
+          )
+        ''');
+
+        // Copy data from old table to new table
+        await db.execute('''
+          INSERT INTO transactions_new (id, user_id, category_id, amount, description, type, date, sms_content, bank_name, account_number, merchant_name, created_at, updated_at)
+          SELECT id, user_id, category_id, amount, description, type, date, sms_content, bank_name, account_number, merchant_name, created_at, updated_at FROM transactions
+        ''');
+
+        // Drop old table and rename new table
+        await db.execute('DROP TABLE transactions');
+        await db.execute('ALTER TABLE transactions_new RENAME TO transactions');
+
+        print('Database upgrade v4: Removed AI fields from transactions table');
+      } catch (e) {
+        print('Database upgrade v4 error: $e');
       }
     }
   }

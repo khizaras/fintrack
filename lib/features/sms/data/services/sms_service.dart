@@ -4,10 +4,13 @@ import 'package:logger/logger.dart';
 
 import '../../../../core/database/database_helper.dart';
 import '../../../transactions/domain/entities/transaction.dart';
+import 'intelligent_sms_classifier.dart';
 
 class SmsService {
   final Telephony _telephony = Telephony.instance;
   final DatabaseHelper _databaseHelper = DatabaseHelper.instance;
+  final IntelligentSmsClassifier _intelligentClassifier =
+      IntelligentSmsClassifier();
   final Logger _logger = Logger();
 
   /// Check if SMS permissions are granted
@@ -95,7 +98,7 @@ class SmsService {
         final pattern = SmsPattern.fromMap(patternMap);
 
         if (_matchesSender(sender, pattern.senderPattern)) {
-          final parsedTransaction = _extractTransactionFromSms(
+          final parsedTransaction = await _extractTransactionFromSms(
             smsContent,
             pattern,
             date,
@@ -121,13 +124,13 @@ class SmsService {
     return regex.hasMatch(sender);
   }
 
-  /// Extract transaction details from SMS content
-  Transaction? _extractTransactionFromSms(
+  /// Extract transaction details from SMS content with AI classification
+  Future<Transaction?> _extractTransactionFromSms(
     String smsContent,
     SmsPattern pattern,
     DateTime date,
     String sender,
-  ) {
+  ) async {
     try {
       // Extract amount
       final amountRegex = RegExp(pattern.amountPattern);
@@ -148,34 +151,55 @@ class SmsService {
       // Determine transaction type first
       final type = _determineTransactionType(smsContent, pattern);
 
-      // Extract description/merchant
-      String? description;
+      // Extract initial description/merchant
+      String? initialDescription;
       if (pattern.descriptionPattern != null) {
         final descRegex = RegExp(pattern.descriptionPattern!);
         final descMatch = descRegex.firstMatch(smsContent);
-        description = descMatch?.group(1)?.trim();
+        initialDescription = descMatch?.group(1)?.trim();
       }
 
       // If no description found from pattern, try to extract a meaningful description
-      if (description == null || description.isEmpty) {
-        description =
+      if (initialDescription == null || initialDescription.isEmpty) {
+        initialDescription =
             _extractFallbackDescription(smsContent, pattern.bankName, type);
       }
 
-      // Auto-categorize
-      final categoryId = _getCategoryForTransaction(description, type);
+      // 🤖 Use intelligent classification
+      final classificationResult =
+          await _intelligentClassifier.classifyTransaction(
+        smsContent: smsContent,
+        amount: amount,
+        type: type,
+        merchantName: initialDescription,
+      );
+
+      // Use intelligent classification results
+      final categoryId = classificationResult.categoryId;
+      final finalDescription =
+          classificationResult.suggestedDescription.isNotEmpty
+              ? classificationResult.suggestedDescription
+              : initialDescription.isNotEmpty
+                  ? initialDescription
+                  : 'Transaction';
+
+      final enhancedMerchant =
+          classificationResult.extractedMerchant ?? initialDescription;
+
+      _logger.i(
+          'Intelligent Classification: Category $categoryId, Method: ${classificationResult.classificationMethod}');
 
       return Transaction(
         userId: 1, // Default user ID for now
         categoryId: categoryId,
         amount: amount,
-        description: description,
+        description: finalDescription,
         type: type,
         date: date,
         smsContent: smsContent,
         bankName: pattern.bankName,
         accountNumber: accountNumber,
-        merchantName: description,
+        merchantName: enhancedMerchant,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -240,23 +264,11 @@ class SmsService {
         .join(' ');
   }
 
-  /// Determine if transaction is income or expense
+  /// Determine if transaction is income or expense using improved logic
   TransactionType _determineTransactionType(
       String smsContent, SmsPattern pattern) {
-    final keywords = pattern.transactionTypeKeywords.toLowerCase();
-    final content = smsContent.toLowerCase();
-
-    // Check for credit/income keywords
-    if (content.contains('credited') ||
-        content.contains('deposited') ||
-        content.contains('received') ||
-        content.contains('salary') ||
-        content.contains('refund')) {
-      return TransactionType.income;
-    }
-
-    // Default to expense for debit/spending
-    return TransactionType.expense;
+    // Use the improved classifier's transaction type detection
+    return _intelligentClassifier.determineTransactionType(smsContent);
   }
 
   /// Auto-categorize transaction based on description

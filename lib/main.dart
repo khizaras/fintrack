@@ -7,7 +7,7 @@ import 'core/database/database_helper.dart';
 import 'features/transactions/data/repositories/transaction_repository.dart';
 import 'features/transactions/presentation/bloc/transaction_bloc.dart';
 import 'features/sms/data/services/sms_service.dart';
-import 'features/navigation/presentation/pages/main_navigation_page.dart';
+import 'features/splash/presentation/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,7 +112,7 @@ class FinTrackApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const MainNavigationPage(),
+        home: const SplashPage(),
       ),
     );
   }

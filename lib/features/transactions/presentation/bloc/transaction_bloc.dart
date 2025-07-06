@@ -14,7 +14,22 @@ abstract class TransactionEvent extends Equatable {
 }
 
 class LoadTransactions extends TransactionEvent {
-  const LoadTransactions();
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final TransactionType? type;
+
+  const LoadTransactions({
+    this.startDate,
+    this.endDate,
+    this.type,
+  });
+
+  @override
+  List<Object?> get props => [startDate, endDate, type];
+}
+
+class ScanSMSMessages extends TransactionEvent {
+  const ScanSMSMessages();
 }
 
 class LoadRecentTransactions extends TransactionEvent {
@@ -153,6 +168,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadRecentTransactions>(_onLoadRecentTransactions);
     on<LoadTransactionStats>(_onLoadTransactionStats);
+    on<ScanSMSMessages>(_onScanSMSMessages);
     on<ScanSmsForTransactions>(_onScanSmsForTransactions);
     on<ClearAllTransactions>(_onClearAllTransactions);
     on<AddTransaction>(_onAddTransaction);
@@ -166,7 +182,24 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   ) async {
     try {
       emit(const TransactionLoading());
-      final transactions = await _transactionRepository.getAllTransactions();
+
+      List<Transaction> transactions;
+
+      if (event.startDate != null && event.endDate != null) {
+        // Filter by date range
+        transactions = await _transactionRepository.getTransactionsByDateRange(
+          event.startDate!,
+          event.endDate!,
+        );
+      } else if (event.type != null) {
+        // Filter by transaction type
+        transactions =
+            await _transactionRepository.getTransactionsByType(event.type!);
+      } else {
+        // Get all transactions
+        transactions = await _transactionRepository.getAllTransactions();
+      }
+
       emit(TransactionLoaded(transactions: transactions));
     } catch (e) {
       emit(TransactionError('Failed to load transactions: $e'));
@@ -221,6 +254,47 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
 
   Future<void> _onScanSmsForTransactions(
     ScanSmsForTransactions event,
+    Emitter<TransactionState> emit,
+  ) async {
+    try {
+      emit(const SmsProcessing());
+
+      // Check permissions first
+      final hasPermission = await _smsService.checkSmsPermissions();
+      if (!hasPermission) {
+        final granted = await _smsService.requestSmsPermissions();
+        if (!granted) {
+          emit(const TransactionError(
+              'SMS permission is required to scan messages'));
+          return;
+        }
+      }
+
+      // Read and parse SMS messages
+      final newTransactions = await _smsService.readAllSmsTransactions();
+
+      if (newTransactions.isNotEmpty) {
+        // Transactions are already saved to database by SMS service
+        emit(SmsProcessed(
+          transactionsFound: newTransactions.length,
+          newTransactions: newTransactions,
+        ));
+
+        // Reload all transactions to reflect the changes
+        add(const LoadTransactions());
+      } else {
+        emit(const SmsProcessed(
+          transactionsFound: 0,
+          newTransactions: [],
+        ));
+      }
+    } catch (e) {
+      emit(TransactionError('Failed to scan SMS: $e'));
+    }
+  }
+
+  Future<void> _onScanSMSMessages(
+    ScanSMSMessages event,
     Emitter<TransactionState> emit,
   ) async {
     try {

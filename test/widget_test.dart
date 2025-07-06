@@ -17,5 +17,8 @@ void main() {
 
     // Verify that the app launches without errors
     expect(find.byType(MaterialApp), findsOneWidget);
+
+    // Wait for initial frame
+    await tester.pump();
   });
 }
