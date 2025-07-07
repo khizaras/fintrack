@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/pages/modern_home_page.dart';
-import '../../../transactions/presentation/pages/modern_transactions_page.dart';
+import '../../../transactions/presentation/pages/apple_style_transactions_page.dart';
 import '../../../budgets/presentation/pages/budgets_page.dart';
-import '../../../insights/presentation/pages/insights_dashboard.dart';
+import '../../../insights/presentation/pages/apple_style_insights_dashboard.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -18,9 +18,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   final List<Widget> _pages = [
     const ModernHomePage(),
-    const ModernTransactionsPage(),
+    const AppleStyleTransactionsPage(),
     const BudgetsPage(),
-    const InsightsDashboard(),
+    const AppleStyleInsightsDashboard(),
   ];
 
   @override
@@ -42,8 +42,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         unselectedItemColor: AppColors.textSecondary,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: Icon(Icons.home),
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long),
@@ -54,7 +54,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Budgets',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.auto_graph),
+            icon: Icon(Icons.auto_awesome),
             label: 'AI Insights',
           ),
         ],

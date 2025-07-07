@@ -69,18 +69,32 @@ class _InsightsDashboardState extends State<InsightsDashboard>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Financial Insights',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 18,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.auto_awesome,
+                      color: Colors.white, size: 16),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'AI Financial Insights',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
             ),
             Text(
               _isUsingRealData
-                  ? '📱 Real SMS Data'
-                  : '🎯 Demo Data (Enable SMS)',
+                  ? '📱 Real SMS Data Analysis'
+                  : '🎯 Demo Mode (Enable SMS for Real AI)',
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -136,14 +150,16 @@ class _InsightsDashboardState extends State<InsightsDashboard>
 
   Widget _buildDataSourceCard() {
     return Card(
-      elevation: 4,
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
-            colors: [Color(0xFF4A90E2), Color(0xFF357ABD)],
+            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -153,37 +169,78 @@ class _InsightsDashboardState extends State<InsightsDashboard>
           children: [
             Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.white, size: 24),
-                SizedBox(width: 8),
-                Text(
-                  'Using Demo Data',
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.auto_awesome,
+                      color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'AI Demo Mode',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             const Text(
-              'To see real insights from your bank SMS messages, enable SMS permissions.',
+              'Enable SMS access to unlock real AI-powered financial insights from your bank messages.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 14,
+                height: 1.4,
               ),
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _enableRealData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF4A90E2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: _enableRealData,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.sms_outlined,
+                          color: Color(0xFF667eea),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Enable AI SMS Analysis',
+                          style: TextStyle(
+                            color: Color(0xFF667eea),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              child: const Text('Enable SMS Reading'),
             ),
           ],
         ),
@@ -243,65 +300,104 @@ class _InsightsDashboardState extends State<InsightsDashboard>
     final income = _insights!.totalIncome;
     final expenses = _insights!.totalExpenses;
     final savings = income - expenses;
-    // final savingsRate = income > 0 ? (savings / income) * 100 : 0;
 
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildSummaryCard(
-            'Income',
-            '₹${income.toStringAsFixed(0)}',
-            Colors.green,
-            Icons.trending_up,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSummaryCard(
+                'Total Income',
+                '₹${income.toStringAsFixed(0)}',
+                Colors.green,
+                Icons.arrow_downward,
+                gradientColor: const Color(0xFF2ECC71),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildSummaryCard(
+                'Total Expenses',
+                '₹${expenses.toStringAsFixed(0)}',
+                Colors.red,
+                Icons.arrow_upward,
+                gradientColor: const Color(0xFFE74C3C),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildSummaryCard(
-            'Expenses',
-            '₹${expenses.toStringAsFixed(0)}',
-            Colors.red,
-            Icons.trending_down,
-          ),
+        const SizedBox(height: 16),
+        _buildSummaryCard(
+          'Net Savings',
+          '₹${savings.toStringAsFixed(0)}',
+          savings >= 0 ? Colors.green : Colors.red,
+          savings >= 0 ? Icons.savings_outlined : Icons.warning_outlined,
+          gradientColor:
+              savings >= 0 ? const Color(0xFF27AE60) : const Color(0xFFE74C3C),
+          isWide: true,
         ),
       ],
     );
   }
 
   Widget _buildSummaryCard(
-      String title, String amount, Color color, IconData icon) {
+      String title, String amount, Color textColor, IconData icon,
+      {Color? gradientColor, bool isWide = false}) {
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              gradientColor?.withOpacity(0.1) ?? textColor.withOpacity(0.1),
+              gradientColor?.withOpacity(0.05) ?? textColor.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: textColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: textColor, size: 24),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              amount,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                amount,
+                style: TextStyle(
+                  fontSize: isWide ? 28 : 24,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -313,25 +409,51 @@ class _InsightsDashboardState extends State<InsightsDashboard>
     }
 
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Recommendations',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4facfe), Color(0xFF00f2fe)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.lightbulb_outline,
+                        color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'AI Recommendations',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            ...(_insights!.recommendations
-                .take(3)
-                .map((rec) => _buildRecommendationItem(rec))),
-          ],
+              const SizedBox(height: 16),
+              ...(_insights!.recommendations
+                  .take(3)
+                  .map((rec) => _buildRecommendationItem(rec))),
+            ],
+          ),
         ),
       ),
     );
@@ -340,53 +462,90 @@ class _InsightsDashboardState extends State<InsightsDashboard>
   Widget _buildRecommendationItem(FinancialRecommendation recommendation) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            width: 4,
-            color: _getPriorityColor(recommendation.priority),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            recommendation.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            recommendation.description,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
-          ),
-          if (recommendation.potentialSavings != null)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'Save ₹${recommendation.potentialSavings!.toStringAsFixed(0)}',
-                style: const TextStyle(
-                  color: Colors.green,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color:
+                    _getPriorityColor(recommendation.priority).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _getRecommendationIcon(recommendation.type),
+                color: _getPriorityColor(recommendation.priority),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recommendation.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    recommendation.description,
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 14,
+                      height: 1.3,
+                    ),
+                  ),
+                  if (recommendation.potentialSavings != null)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.savings_outlined,
+                            color: Colors.green,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Save ₹${recommendation.potentialSavings!.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -397,25 +556,51 @@ class _InsightsDashboardState extends State<InsightsDashboard>
     }
 
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Unusual Activity',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFffecd2), Color(0xFFfcb69f)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.security_outlined,
+                        color: Colors.orange, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'AI Anomaly Detection',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            ...(_insights!.anomalies
-                .take(3)
-                .map((anomaly) => _buildAnomalyItem(anomaly))),
-          ],
+              const SizedBox(height: 16),
+              ...(_insights!.anomalies
+                  .take(3)
+                  .map((anomaly) => _buildAnomalyItem(anomaly))),
+            ],
+          ),
         ),
       ),
     );
@@ -424,43 +609,99 @@ class _InsightsDashboardState extends State<InsightsDashboard>
   Widget _buildAnomalyItem(SpendingAnomaly anomaly) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            width: 4,
-            color: _getAnomalyColor(anomaly.type),
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _getAnomalyTitle(anomaly.type),
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            anomaly.description,
-            style: const TextStyle(
-              color: Colors.grey,
-              fontSize: 12,
-            ),
-          ),
-          Text(
-            '₹${anomaly.amount.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _getAnomalyColor(anomaly.type).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _getAnomalyIcon(anomaly.type),
+                color: _getAnomalyColor(anomaly.type),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getAnomalyTitle(anomaly.type),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    anomaly.description,
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 14,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              _getAnomalyColor(anomaly.type).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '₹${anomaly.amount.toStringAsFixed(0)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: _getAnomalyColor(anomaly.type),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${(anomaly.severity * 100).toStringAsFixed(0)}% severity',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -759,5 +1000,23 @@ class _InsightsDashboardState extends State<InsightsDashboard>
       case AnomalyType.unusualMerchant:
         return 'Unusual Merchant';
     }
+  }
+
+  IconData _getAnomalyIcon(AnomalyType type) {
+    switch (type) {
+      case AnomalyType.unusualAmount:
+        return Icons.monetization_on_outlined;
+      case AnomalyType.unusualFrequency:
+        return Icons.repeat_outlined;
+      case AnomalyType.unusualTime:
+        return Icons.access_time_outlined;
+      case AnomalyType.unusualMerchant:
+        return Icons.store_outlined;
+    }
+  }
+
+  IconData _getRecommendationIcon(RecommendationType type) {
+    // For now, return different icons based on the recommendation title
+    return Icons.lightbulb_outline;
   }
 }

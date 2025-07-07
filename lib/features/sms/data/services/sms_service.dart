@@ -271,7 +271,7 @@ class SmsService {
     return _intelligentClassifier.determineTransactionType(smsContent);
   }
 
-  /// Auto-categorize transaction based on description
+  /// Auto-categorize transaction based on description with AI-powered categorization
   int _getCategoryForTransaction(String description, TransactionType type) {
     final desc = description.toLowerCase();
 
@@ -279,64 +279,155 @@ class SmsService {
       return 8; // Income category ID
     }
 
-    // Food & Dining
+    // Enhanced AI-powered categorization
+
+    // Food & Dining (Category 1)
     if (desc.contains('swiggy') ||
         desc.contains('zomato') ||
+        desc.contains('ubereats') ||
+        desc.contains('foodpanda') ||
         desc.contains('restaurant') ||
         desc.contains('food') ||
         desc.contains('cafe') ||
+        desc.contains('mcdonalds') ||
+        desc.contains('kfc') ||
+        desc.contains('dominos') ||
+        desc.contains('pizza') ||
+        desc.contains('burger') ||
         desc.contains('bigbasket') ||
-        desc.contains('grocery')) {
-      return 1; // Food category
+        desc.contains('grofers') ||
+        desc.contains('blinkit') ||
+        desc.contains('grocery') ||
+        desc.contains('supermarket') ||
+        desc.contains('fresh') ||
+        desc.contains('vegetables') ||
+        desc.contains('fruits')) {
+      return 1;
     }
 
-    // Transport
+    // Transport (Category 2)
     if (desc.contains('uber') ||
         desc.contains('ola') ||
+        desc.contains('rapido') ||
         desc.contains('metro') ||
         desc.contains('petrol') ||
         desc.contains('fuel') ||
-        desc.contains('dmrc')) {
-      return 2; // Transport category
+        desc.contains('dmrc') ||
+        desc.contains('bus') ||
+        desc.contains('taxi') ||
+        desc.contains('auto') ||
+        desc.contains('rickshaw') ||
+        desc.contains('transport') ||
+        desc.contains('parking') ||
+        desc.contains('toll') ||
+        desc.contains('irctc') ||
+        desc.contains('railway') ||
+        desc.contains('flight') ||
+        desc.contains('airlines')) {
+      return 2;
     }
 
-    // Shopping
+    // Shopping (Category 3)
     if (desc.contains('amazon') ||
         desc.contains('flipkart') ||
         desc.contains('myntra') ||
+        desc.contains('ajio') ||
+        desc.contains('nykaa') ||
         desc.contains('shopping') ||
-        desc.contains('mall')) {
-      return 3; // Shopping category
+        desc.contains('mall') ||
+        desc.contains('store') ||
+        desc.contains('market') ||
+        desc.contains('retail') ||
+        desc.contains('fashion') ||
+        desc.contains('clothing') ||
+        desc.contains('electronics') ||
+        desc.contains('mobile') ||
+        desc.contains('laptop')) {
+      return 3;
     }
 
-    // Entertainment
+    // Entertainment (Category 4)
     if (desc.contains('netflix') ||
+        desc.contains('amazon prime') ||
+        desc.contains('hotstar') ||
         desc.contains('spotify') ||
+        desc.contains('youtube') ||
         desc.contains('movie') ||
+        desc.contains('cinema') ||
         desc.contains('theater') ||
-        desc.contains('cinema')) {
-      return 4; // Entertainment category
+        desc.contains('game') ||
+        desc.contains('entertainment') ||
+        desc.contains('subscription') ||
+        desc.contains('music')) {
+      return 4;
     }
 
-    // Healthcare
-    if (desc.contains('hospital') ||
-        desc.contains('clinic') ||
-        desc.contains('pharmacy') ||
-        desc.contains('medical')) {
-      return 5; // Healthcare category
-    }
-
-    // Utilities
+    // Utilities (Category 5)
     if (desc.contains('electricity') ||
         desc.contains('water') ||
         desc.contains('gas') ||
         desc.contains('internet') ||
-        desc.contains('mobile')) {
-      return 6; // Utilities category
+        desc.contains('phone') ||
+        desc.contains('mobile') ||
+        desc.contains('broadband') ||
+        desc.contains('wifi') ||
+        desc.contains('utility') ||
+        desc.contains('bill') ||
+        desc.contains('payment') ||
+        desc.contains('recharge')) {
+      return 5;
     }
 
-    // Default to Other category
-    return 9;
+    // Healthcare (Category 6)
+    if (desc.contains('hospital') ||
+        desc.contains('clinic') ||
+        desc.contains('doctor') ||
+        desc.contains('pharmacy') ||
+        desc.contains('medicine') ||
+        desc.contains('medical') ||
+        desc.contains('health') ||
+        desc.contains('insurance') ||
+        desc.contains('apollo') ||
+        desc.contains('medanta') ||
+        desc.contains('max') ||
+        desc.contains('fortis')) {
+      return 6;
+    }
+
+    // Education (Category 7)
+    if (desc.contains('school') ||
+        desc.contains('college') ||
+        desc.contains('university') ||
+        desc.contains('course') ||
+        desc.contains('education') ||
+        desc.contains('tuition') ||
+        desc.contains('fees') ||
+        desc.contains('book') ||
+        desc.contains('study') ||
+        desc.contains('training') ||
+        desc.contains('coaching') ||
+        desc.contains('academy')) {
+      return 7;
+    }
+
+    // Banking & Finance (Category 9)
+    if (desc.contains('bank') ||
+        desc.contains('loan') ||
+        desc.contains('emi') ||
+        desc.contains('investment') ||
+        desc.contains('mutual fund') ||
+        desc.contains('sip') ||
+        desc.contains('insurance') ||
+        desc.contains('premium') ||
+        desc.contains('finance') ||
+        desc.contains('credit') ||
+        desc.contains('debit') ||
+        desc.contains('atm')) {
+      return 9;
+    }
+
+    // Others/Miscellaneous (Category 10)
+    return 10;
   }
 
   /// Clear all existing transactions from the database
