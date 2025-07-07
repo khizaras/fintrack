@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:logger/logger.dart';
@@ -12,7 +10,7 @@ class AIModelManager {
   AIModelManager._internal();
 
   final Logger _logger = Logger();
-  
+
   Interpreter? _finbertModel;
   Interpreter? _xgboostModel;
   Map<String, int>? _vocabulary;
@@ -24,16 +22,16 @@ class AIModelManager {
 
     try {
       _logger.i('Loading AI models for transaction classification...');
-      
+
       // Load FinBERT model (fine-tuned for financial text)
       await _loadFinBERTModel();
-      
+
       // Load XGBoost ensemble model
       await _loadXGBoostModel();
-      
+
       // Load vocabulary for text processing
       await _loadVocabulary();
-      
+
       _isInitialized = true;
       _logger.i('AI models loaded successfully');
     } catch (e) {
@@ -54,13 +52,14 @@ class AIModelManager {
     try {
       // Preprocess text
       final processedText = _preprocessText(smsText);
-      
+
       // Extract features
       final featureVector = await _extractFeatures(processedText, features);
-      
+
       // Run ensemble prediction
-      final results = await _runEnsemblePrediction(featureVector, processedText);
-      
+      final results =
+          await _runEnsemblePrediction(featureVector, processedText);
+
       return results;
     } catch (e) {
       _logger.e('Classification error: $e');
@@ -72,7 +71,8 @@ class AIModelManager {
   /// Load fine-tuned FinBERT model for financial text understanding
   Future<void> _loadFinBERTModel() async {
     try {
-      final modelFile = await _loadAssetFile('assets/models/finbert_model.tflite');
+      final modelFile =
+          await _loadAssetFile('assets/models/finbert_model.tflite');
       _finbertModel = Interpreter.fromBuffer(modelFile);
       _logger.i('FinBERT model loaded');
     } catch (e) {
@@ -83,7 +83,8 @@ class AIModelManager {
   /// Load XGBoost ensemble model for robust classification
   Future<void> _loadXGBoostModel() async {
     try {
-      final modelFile = await _loadAssetFile('assets/models/xgboost_ensemble.tflite');
+      final modelFile =
+          await _loadAssetFile('assets/models/xgboost_ensemble.tflite');
       _xgboostModel = Interpreter.fromBuffer(modelFile);
       _logger.i('XGBoost ensemble model loaded');
     } catch (e) {
@@ -94,7 +95,8 @@ class AIModelManager {
   /// Load vocabulary for text tokenization
   Future<void> _loadVocabulary() async {
     try {
-      final vocabJson = await rootBundle.loadString('assets/models/vocabulary.json');
+      // final vocabJson =
+      //     await rootBundle.loadString('assets/models/vocabulary.json');
       // Parse vocabulary mapping
       _vocabulary = {}; // Parse from JSON
       _logger.i('Vocabulary loaded');
@@ -113,11 +115,11 @@ class AIModelManager {
   String _preprocessText(String text) {
     // Normalize bank-specific formats
     String processed = text.toLowerCase();
-    
+
     // Remove noise and standardize patterns
     processed = processed.replaceAll(RegExp(r'\s+'), ' ');
     processed = processed.replaceAll(RegExp(r'[^\w\s.]'), ' ');
-    
+
     // Standardize common bank terms
     final bankNormalizations = {
       'a/c': 'account',
@@ -127,33 +129,33 @@ class AIModelManager {
       'cr': 'credit',
       'dr': 'debit',
     };
-    
+
     for (final entry in bankNormalizations.entries) {
       processed = processed.replaceAll(entry.key, entry.value);
     }
-    
+
     return processed.trim();
   }
 
   /// Extract comprehensive features for ML models
   Future<List<double>> _extractFeatures(
-    String processedText, 
+    String processedText,
     Map<String, dynamic>? additionalFeatures,
   ) async {
     final features = <double>[];
-    
+
     // Text-based features
     features.addAll(_extractTextFeatures(processedText));
-    
+
     // Temporal features
     features.addAll(_extractTemporalFeatures(additionalFeatures));
-    
+
     // Financial pattern features
     features.addAll(_extractFinancialFeatures(processedText));
-    
+
     // Contextual features
     features.addAll(_extractContextualFeatures(processedText));
-    
+
     return features;
   }
 
@@ -161,7 +163,7 @@ class AIModelManager {
   List<double> _extractTextFeatures(String text) {
     // TF-IDF features
     final tfidfFeatures = _calculateTFIDF(text);
-    
+
     // Character-level features
     final charFeatures = [
       text.length.toDouble(),
@@ -169,19 +171,19 @@ class AIModelManager {
       _countDigits(text).toDouble(),
       _countCurrency(text).toDouble(),
     ];
-    
+
     return [...tfidfFeatures, ...charFeatures];
   }
 
   /// Extract temporal features (time patterns, frequency)
   List<double> _extractTemporalFeatures(Map<String, dynamic>? features) {
     if (features == null) return List.filled(10, 0.0);
-    
+
     final now = DateTime.now();
     final hour = now.hour.toDouble();
     final dayOfWeek = now.weekday.toDouble();
     final dayOfMonth = now.day.toDouble();
-    
+
     return [
       hour / 24.0, // Normalized hour
       dayOfWeek / 7.0, // Normalized day of week
@@ -221,19 +223,19 @@ class AIModelManager {
     String text,
   ) async {
     final predictions = <ModelPrediction>[];
-    
+
     // FinBERT prediction
     if (_finbertModel != null) {
       final bertPrediction = await _runFinBERTPrediction(text);
       predictions.add(bertPrediction);
     }
-    
+
     // XGBoost prediction
     if (_xgboostModel != null) {
       final xgbPrediction = await _runXGBoostPrediction(features);
       predictions.add(xgbPrediction);
     }
-    
+
     // Ensemble voting
     return _combineModelPredictions(predictions, text);
   }
@@ -243,14 +245,14 @@ class AIModelManager {
     // Tokenize text and run through FinBERT
     final tokenIds = _tokenizeText(text);
     final input = _padSequence(tokenIds, 128);
-    
+
     final output = List.filled(1 * 8, 0.0).reshape([1, 8]); // 8 categories
     _finbertModel!.run([input], {0: output});
-    
+
     final probabilities = output[0];
     final maxIndex = _argMax(probabilities);
     final confidence = probabilities[maxIndex];
-    
+
     return ModelPrediction(
       modelName: 'FinBERT',
       transactionType: _indexToTransactionType(maxIndex),
@@ -264,13 +266,13 @@ class AIModelManager {
   Future<ModelPrediction> _runXGBoostPrediction(List<double> features) async {
     final input = features.reshape([1, features.length]);
     final output = List.filled(1 * 8, 0.0).reshape([1, 8]);
-    
+
     _xgboostModel!.run([input], {0: output});
-    
+
     final probabilities = output[0];
     final maxIndex = _argMax(probabilities);
     final confidence = probabilities[maxIndex];
-    
+
     return ModelPrediction(
       modelName: 'XGBoost Ensemble',
       transactionType: _indexToTransactionType(maxIndex),
@@ -288,29 +290,29 @@ class AIModelManager {
     if (predictions.isEmpty) {
       return _fallbackClassification(text);
     }
-    
+
     // Weighted ensemble (FinBERT: 0.7, XGBoost: 0.3)
     final weights = {'FinBERT': 0.7, 'XGBoost Ensemble': 0.3};
     final combinedProbs = List.filled(8, 0.0);
     double totalWeight = 0.0;
-    
+
     for (final prediction in predictions) {
       final weight = weights[prediction.modelName] ?? 0.5;
       totalWeight += weight;
-      
+
       for (int i = 0; i < combinedProbs.length; i++) {
         combinedProbs[i] += prediction.probabilities[i] * weight;
       }
     }
-    
+
     // Normalize probabilities
     for (int i = 0; i < combinedProbs.length; i++) {
       combinedProbs[i] /= totalWeight;
     }
-    
+
     final maxIndex = _argMax(combinedProbs);
     final confidence = combinedProbs[maxIndex];
-    
+
     return TransactionClassificationResult(
       transactionType: _indexToTransactionType(maxIndex),
       category: _indexToCategory(maxIndex),
@@ -324,7 +326,7 @@ class AIModelManager {
   TransactionClassificationResult _fallbackClassification(String text) {
     // Use existing rule-based logic as fallback
     final isExpense = _detectExpenseKeywords(text);
-    
+
     return TransactionClassificationResult(
       transactionType: isExpense ? 'expense' : 'income',
       category: _getRuleBasedCategory(text),
@@ -365,8 +367,14 @@ class AIModelManager {
 
   String _indexToCategory(int index) {
     const categories = [
-      'Food & Dining', 'Transport', 'Shopping', 'Entertainment',
-      'Salary', 'Investment', 'Refund', 'Other Income'
+      'Food & Dining',
+      'Transport',
+      'Shopping',
+      'Entertainment',
+      'Salary',
+      'Investment',
+      'Refund',
+      'Other Income'
     ];
     return categories[index];
   }
@@ -377,15 +385,17 @@ class AIModelManager {
   }
 
   int _countDigits(String text) => text.replaceAll(RegExp(r'[^\d]'), '').length;
-  int _countCurrency(String text) => RegExp(r'₹|\$|USD|INR').allMatches(text).length;
+  int _countCurrency(String text) =>
+      RegExp(r'₹|\$|USD|INR').allMatches(text).length;
   bool _isWeekend(DateTime date) => date.weekday > 5;
   bool _isBusinessHour(DateTime date) => date.hour >= 9 && date.hour <= 17;
-  
+
   bool _hasAmountPattern(String text) => RegExp(r'₹\s*[\d,]+').hasMatch(text);
   bool _hasAccountPattern(String text) => RegExp(r'\*+\d{4}').hasMatch(text);
-  bool _hasDatePattern(String text) => RegExp(r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}').hasMatch(text);
+  bool _hasDatePattern(String text) =>
+      RegExp(r'\d{1,2}[-/]\d{1,2}[-/]\d{2,4}').hasMatch(text);
   bool _hasBankCode(String text) => RegExp(r'[A-Z]{4}\d+').hasMatch(text);
-  
+
   double _extractAmountValue(String text) {
     final match = RegExp(r'₹\s*([\d,]+)').firstMatch(text);
     if (match != null) {
@@ -405,13 +415,15 @@ class AIModelManager {
   double _getLocationScore(String text) => 0.5; // Placeholder
   double _getPaymentMethodScore(String text) => 0.5; // Placeholder
   double _getUrgencyScore(String text) => 0.5; // Placeholder
-  
+
   bool _detectExpenseKeywords(String text) {
-    return text.contains('debit') || text.contains('withdrawn') || text.contains('paid');
+    return text.contains('debit') ||
+        text.contains('withdrawn') ||
+        text.contains('paid');
   }
-  
+
   String _getRuleBasedCategory(String text) => 'General';
-  
+
   Map<String, dynamic> _extractExplainableFeatures(String text) {
     return {
       'has_amount': _hasAmountPattern(text),

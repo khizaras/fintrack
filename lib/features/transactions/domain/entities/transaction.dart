@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'category.dart';
 
 class Transaction extends Equatable {
   final int? id;
@@ -14,6 +15,7 @@ class Transaction extends Equatable {
   final String? merchantName;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final Category? categoryEntity; // Optional category object
 
   const Transaction({
     this.id,
@@ -29,7 +31,11 @@ class Transaction extends Equatable {
     this.merchantName,
     required this.createdAt,
     required this.updatedAt,
+    this.categoryEntity,
   });
+
+  /// Get category name - either from categoryEntity or fallback to 'Other'
+  String? get category => categoryEntity?.name;
 
   Transaction copyWith({
     int? id,
@@ -45,6 +51,7 @@ class Transaction extends Equatable {
     String? merchantName,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Category? categoryEntity,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -60,6 +67,7 @@ class Transaction extends Equatable {
       merchantName: merchantName ?? this.merchantName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      categoryEntity: categoryEntity ?? this.categoryEntity,
     );
   }
 
@@ -117,6 +125,7 @@ class Transaction extends Equatable {
         merchantName,
         createdAt,
         updatedAt,
+        categoryEntity,
       ];
 }
 

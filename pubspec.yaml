@@ -54,6 +54,9 @@ dependencies:
   # Local Storage
   shared_preferences: ^2.1.2
 
+  # Dependency Injection
+  get_it: ^7.2.0
+
   # AI/ML for Intelligent Classification
   tflite_flutter: ^0.10.4
   google_ml_kit: ^0.16.3
@@ -64,6 +67,23 @@ dependencies:
   # Utilities
   intl: ^0.17.0
   fl_chart: ^0.50.6
+
+  # Enterprise Analytics & Export
+  pdf: ^3.8.4
+  path_provider: ^2.1.1
+  share_plus: ^7.2.1
+  crypto: ^3.0.2
+
+  # Notifications
+  flutter_local_notifications: ^16.3.0
+
+  # Advanced Data Processing
+  collection: ^1.17.0
+  json_annotation: ^4.8.1
+
+  # Network & API (for future enterprise features)
+  dio: ^5.3.2
+  connectivity_plus: ^5.0.2
 
   # Logging
   logger: ^1.4.0
@@ -85,9 +105,16 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/models/
+    - assets/images/
+    - assets/config/
+
+  # AI Models and Configuration
+  # Note: Add actual model files when available
+  # - assets/models/finbert_model.tflite
+  # - assets/models/xgboost_ensemble.tflite
+  # - assets/models/vocabulary.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

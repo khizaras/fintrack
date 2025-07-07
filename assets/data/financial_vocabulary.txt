@@ -1,0 +1,4 @@
+# Financial Vocabulary for NLP Models
+# This file contains the vocabulary used by the financial models
+# In a production environment, this would contain actual vocabulary mappings
+account,savings,checking,credit,debit,atm,withdrawal,deposit,transfer,payment,purchase,transaction,balance,fee,interest,loan,mortgage,investment,spending,income,expense,budget,financial,banking,merchant,vendor,shop,store,restaurant,gas,fuel,grocery,insurance,utility,bill,subscription,rent,salary,wage,dividend,bonus,refund,charge,tax,medical,health,education,entertainment,travel,transport,shopping,food,dining

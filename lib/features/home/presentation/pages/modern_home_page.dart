@@ -7,8 +7,11 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/analytics/analytics_engine.dart';
+import '../../../../core/analytics/domain/entities/spending_insights.dart';
 import '../../../transactions/presentation/bloc/transaction_bloc.dart';
 import '../../../transactions/domain/entities/transaction.dart';
+import '../../../insights/presentation/pages/insights_dashboard.dart';
 import '../widgets/modern_dashboard_card.dart';
 import '../widgets/modern_quick_stats.dart';
 import '../widgets/modern_recent_transactions.dart';
@@ -25,6 +28,9 @@ class _ModernHomePageState extends State<ModernHomePage>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  final AnalyticsEngine _analytics = AnalyticsEngine();
+  SpendingInsights? _aiInsights;
+  bool _isLoadingInsights = false;
 
   @override
   void initState() {
@@ -32,6 +38,7 @@ class _ModernHomePageState extends State<ModernHomePage>
     _initializeAnimations();
     _checkSMSPermission();
     _loadInitialData();
+    _loadAIInsights();
   }
 
   void _initializeAnimations() {
@@ -71,6 +78,30 @@ class _ModernHomePageState extends State<ModernHomePage>
     context.read<TransactionBloc>().add(const LoadRecentTransactions());
   }
 
+  Future<void> _loadAIInsights() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingInsights = true;
+      });
+    }
+
+    try {
+      final insights = await _analytics.generateSpendingInsights();
+      if (mounted) {
+        setState(() {
+          _aiInsights = insights;
+          _isLoadingInsights = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingInsights = false;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -103,6 +134,7 @@ class _ModernHomePageState extends State<ModernHomePage>
                   children: [
                     _buildModernAppBar(),
                     _buildQuickStatsSection(),
+                    _buildAIInsightsCard(),
                     _buildDashboardCards(),
                     _buildRecentTransactionsSection(),
                     _buildQuickActionsSection(),
@@ -726,5 +758,308 @@ class _ModernHomePageState extends State<ModernHomePage>
         Navigator.of(context).pop();
       }
     });
+  }
+
+  Widget _buildAIInsightsCard() {
+    return AnimationConfiguration.staggeredList(
+      position: 2,
+      duration: const Duration(milliseconds: 800),
+      child: SlideAnimation(
+        verticalOffset: 50.0,
+        child: FadeInAnimation(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.purple.withOpacity(0.1),
+                  Colors.blue.withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.purple.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.psychology,
+                        color: Colors.purple,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AI Financial Insights',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple,
+                            ),
+                          ),
+                          Text(
+                            'Powered by Enterprise AI',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const InsightsDashboard(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.purple,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'View Full Dashboard',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (_isLoadingInsights)
+                  _buildLoadingInsights()
+                else if (_aiInsights != null)
+                  _buildInsightsSummary()
+                else
+                  _buildNoInsights(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingInsights() {
+    return Container(
+      height: 60,
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'AI is analyzing your financial patterns...',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInsightsSummary() {
+    final insights = _aiInsights!;
+    return Column(
+      children: [
+        Row(
+          children: [
+            _buildInsightMetric(
+              'Spending Trend',
+              insights.overallTrend.name.toUpperCase(),
+              _getTrendIcon(insights.overallTrend),
+              _getTrendColor(insights.overallTrend),
+            ),
+            const SizedBox(width: 16),
+            _buildInsightMetric(
+              'Monthly Expenses',
+              '₹${insights.totalExpenses.toStringAsFixed(0)}',
+              Icons.trending_down,
+              Colors.red,
+            ),
+          ],
+        ),
+        if (insights.recommendations.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lightbulb, color: Colors.orange, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    insights.recommendations.first.title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (insights.anomalies.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning, color: Colors.red, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${insights.anomalies.length} unusual spending pattern(s) detected',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInsightMetric(
+      String label, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoInsights() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Icon(
+            Icons.insights,
+            color: Colors.grey[400],
+            size: 32,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No insights available yet',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add some transactions to get AI-powered insights',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getTrendIcon(SpendingTrend trend) {
+    switch (trend) {
+      case SpendingTrend.increasing:
+        return Icons.trending_up;
+      case SpendingTrend.decreasing:
+        return Icons.trending_down;
+      case SpendingTrend.stable:
+        return Icons.trending_flat;
+      case SpendingTrend.unknown:
+        return Icons.help_outline;
+    }
+  }
+
+  Color _getTrendColor(SpendingTrend trend) {
+    switch (trend) {
+      case SpendingTrend.increasing:
+        return Colors.red;
+      case SpendingTrend.decreasing:
+        return Colors.green;
+      case SpendingTrend.stable:
+        return Colors.blue;
+      case SpendingTrend.unknown:
+        return Colors.grey;
+    }
   }
 }

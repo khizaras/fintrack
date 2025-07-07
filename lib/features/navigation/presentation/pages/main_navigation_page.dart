@@ -4,7 +4,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/pages/modern_home_page.dart';
 import '../../../transactions/presentation/pages/modern_transactions_page.dart';
 import '../../../budgets/presentation/pages/budgets_page.dart';
-import '../../../insights/presentation/pages/insights_page.dart';
+import '../../../insights/presentation/pages/insights_dashboard.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -20,7 +20,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const ModernHomePage(),
     const ModernTransactionsPage(),
     const BudgetsPage(),
-    const InsightsPage(),
+    const InsightsDashboard(),
   ];
 
   @override
@@ -42,20 +42,20 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         unselectedItemColor: AppColors.textSecondary,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt),
+            icon: Icon(Icons.receipt_long),
             label: 'Transactions',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
+            icon: Icon(Icons.savings),
             label: 'Budgets',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Insights',
+            icon: Icon(Icons.auto_graph),
+            label: 'AI Insights',
           ),
         ],
       ),

@@ -12,16 +12,44 @@ import 'features/splash/presentation/pages/splash_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize database and SMS patterns
+  // Initialize database, SMS patterns, and real data
   await _initializeApp();
 
   runApp(const FinTrackApp());
 }
 
 Future<void> _initializeApp() async {
-  final dbHelper = DatabaseHelper.instance;
-  await dbHelper.database; // Initialize database
-  await _initializeSmsPatterns();
+  try {
+    final dbHelper = DatabaseHelper.instance;
+    await dbHelper.database; // Initialize database
+    await _initializeSmsPatterns();
+
+    // Initialize SMS service and read real transactions
+    await _initializeRealData();
+  } catch (e) {
+    // Database not available (e.g., on web), continue with demo mode
+    print('Database initialization skipped: $e');
+  }
+}
+
+Future<void> _initializeRealData() async {
+  try {
+    final smsService = SmsService();
+
+    // Check if we have SMS permissions
+    final hasPermission = await smsService.checkSmsPermissions();
+
+    if (hasPermission) {
+      print('📱 Reading SMS messages for transaction extraction...');
+      // Read SMS messages and extract transactions
+      final transactions = await smsService.readAllSmsTransactions();
+      print('✅ Extracted ${transactions.length} transactions from SMS');
+    } else {
+      print('⚠️ SMS permission not granted. Will show demo data in analytics.');
+    }
+  } catch (e) {
+    print('⚠️ SMS reading failed: $e. Will show demo data in analytics.');
+  }
 }
 
 Future<void> _initializeSmsPatterns() async {

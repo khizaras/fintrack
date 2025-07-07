@@ -1,0 +1,7 @@
+# XGBoost Model Placeholder
+# This file represents the XGBoost model for transaction classification
+# In a production environment, this would contain the actual model weights
+# For now, this serves as a placeholder for the model loading system
+model_type: xgboost
+version: 1.0.0
+description: XGBoost model for transaction feature-based classification

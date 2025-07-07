@@ -1,0 +1,7 @@
+# FinBERT Model Placeholder
+# This file represents the FinBERT model for financial text classification
+# In a production environment, this would contain the actual model weights
+# For now, this serves as a placeholder for the model loading system
+model_type: finbert
+version: 1.0.0
+description: Financial BERT model for transaction classification
