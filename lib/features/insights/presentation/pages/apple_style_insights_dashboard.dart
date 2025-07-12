@@ -94,6 +94,7 @@ class _AppleStyleInsightsDashboardState
                     _buildBankAnalysis(),
                     _buildAccountAnalysis(),
                     _buildMerchantAnalysis(),
+                    _buildLLMInsightsSection(),
                     _buildTransactionInsights(),
                     _buildAnomaliesSection(),
                     _buildRecommendations(),

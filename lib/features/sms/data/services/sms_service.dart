@@ -84,6 +84,16 @@ class SmsService {
     }
   }
 
+  /// Read all SMS messages and extract transactions with progress tracking
+  Future<List<Transaction>> readAllSmsTransactionsWithLLM({
+    bool clearExisting = false,
+    Function(int current, int total, String currentSms)? onProgress,
+  }) async {
+    // For regular SMS service, delegate to enhanced service if available
+    // This ensures compatibility with the bloc that expects this method
+    return readAllSmsTransactions(clearExisting: clearExisting);
+  }
+
   /// Parse SMS message to transaction
   Future<Transaction?> _parseMessageToTransaction(SmsMessage message) async {
     try {

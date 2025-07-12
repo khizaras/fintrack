@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/transaction.dart';
 import '../../data/repositories/transaction_repository.dart';
-import '../../../sms/data/services/sms_service.dart';
+import '../../../../core/di/service_locator.dart';
 
 // Events
 abstract class TransactionEvent extends Equatable {
@@ -141,6 +141,20 @@ class SmsProcessing extends TransactionState {
   const SmsProcessing();
 }
 
+class SmsProcessingWithProgress extends TransactionState {
+  final int current;
+  final int total;
+  final String currentItem;
+
+  const SmsProcessingWithProgress({
+    required this.current,
+    required this.total,
+    required this.currentItem,
+  });
+
+  double get progress => total > 0 ? current / total : 0.0;
+}
+
 class SmsProcessed extends TransactionState {
   final int transactionsFound;
   final List<Transaction> newTransactions;
@@ -161,11 +175,11 @@ class DatabaseCleared extends TransactionState {
 // BLoC
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final TransactionRepository _transactionRepository;
-  final SmsService _smsService;
+  final dynamic _smsService; // Can be SmsService or EnhancedSmsService
 
   TransactionBloc({
     required TransactionRepository transactionRepository,
-    required SmsService smsService,
+    required dynamic smsService,
   })  : _transactionRepository = transactionRepository,
         _smsService = smsService,
         super(const TransactionInitial()) {
@@ -275,8 +289,24 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
         }
       }
 
-      // Read and parse SMS messages
-      final newTransactions = await _smsService.readAllSmsTransactions();
+      // Read and parse SMS messages with appropriate service
+      List<Transaction> newTransactions;
+
+      if (isEnhancedSmsServiceAvailable) {
+        // Use LLM-enhanced SMS service with progress tracking
+        newTransactions = await _smsService.readAllSmsTransactionsWithLLM(
+          onProgress: (current, total, currentSms) {
+            emit(SmsProcessingWithProgress(
+              current: current,
+              total: total,
+              currentItem: currentSms,
+            ));
+          },
+        );
+      } else {
+        // Use regular SMS service
+        newTransactions = await _smsService.readAllSmsTransactions();
+      }
 
       if (newTransactions.isNotEmpty) {
         // Transactions are already saved to database by SMS service
@@ -316,8 +346,24 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
         }
       }
 
-      // Read and parse SMS messages
-      final newTransactions = await _smsService.readAllSmsTransactions();
+      // Read and parse SMS messages with appropriate service
+      List<Transaction> newTransactions;
+
+      if (isEnhancedSmsServiceAvailable) {
+        // Use LLM-enhanced SMS service with progress tracking
+        newTransactions = await _smsService.readAllSmsTransactionsWithLLM(
+          onProgress: (current, total, currentSms) {
+            emit(SmsProcessingWithProgress(
+              current: current,
+              total: total,
+              currentItem: currentSms,
+            ));
+          },
+        );
+      } else {
+        // Use regular SMS service
+        newTransactions = await _smsService.readAllSmsTransactions();
+      }
 
       if (newTransactions.isNotEmpty) {
         // Transactions are already saved to database by SMS service
@@ -401,8 +447,15 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       emit(const TransactionLoading());
 
       // Re-classify existing transactions
-      final reclassifiedCount =
-          await _smsService.reclassifyExistingTransactions();
+      int reclassifiedCount = 0;
+
+      try {
+        // Both services have reclassifyExistingTransactions method
+        reclassifiedCount = await _smsService.reclassifyExistingTransactions();
+      } catch (e) {
+        // If enhanced service doesn't have this method, ignore and continue
+        print('Reclassification not available for current SMS service: $e');
+      }
 
       // Reload transactions to show updated classifications
       add(const LoadTransactions());

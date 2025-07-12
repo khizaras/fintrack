@@ -84,6 +84,7 @@ dependencies:
   # Network & API (for future enterprise features)
   dio: ^5.3.2
   connectivity_plus: ^5.0.2
+  http: ^0.13.6
 
   # Logging
   logger: ^1.4.0

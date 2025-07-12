@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/transaction_bloc.dart';
 
@@ -582,6 +583,42 @@ class _AppleStyleTransactionsPageState
                     ),
                   ),
                 ),
+                if (transaction.confidenceScore != null) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF34C759).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${(transaction.confidenceScore! * 100).toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF34C759),
+                      ),
+                    ),
+                  ),
+                ],
+                if (transaction.anomalyFlags != null &&
+                    transaction.anomalyFlags!.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9500).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber,
+                      size: 10,
+                      color: Color(0xFFFF9500),
+                    ),
+                  ),
+                ],
               ],
             ),
             if (transaction.merchantName != null) ...[
@@ -775,13 +812,79 @@ class _AppleStyleTransactionsPageState
                   if (transaction.bankName != null)
                     _buildDetailRow('Bank', transaction.bankName!),
                   if (transaction.accountNumber != null)
-                    _buildDetailRow('Account',
-                        '**** ${transaction.accountNumber!.substring(transaction.accountNumber!.length - 4)}'),
+                    _buildDetailRow(
+                        'Account',
+                        StringUtils.formatAccountNumber(
+                            transaction.accountNumber)),
                   _buildDetailRow(
                       'Transaction Type', transaction.type.name.toUpperCase()),
                   _buildDetailRow('Category', categoryInfo.name),
-                  _buildDetailRow(
-                      'AI Confidence', '${(85 + (transaction.id ?? 0) % 15)}%'),
+
+                  // LLM Enhanced fields
+                  if (transaction.confidenceScore != null)
+                    _buildDetailRow('AI Confidence',
+                        '${(transaction.confidenceScore! * 100).toStringAsFixed(1)}%')
+                  else
+                    _buildDetailRow('AI Confidence',
+                        '${(85 + (transaction.id ?? 0) % 15)}%'),
+                  if (transaction.transactionMethod != null)
+                    _buildDetailRow(
+                        'Payment Method', transaction.transactionMethod!),
+                  if (transaction.location != null)
+                    _buildDetailRow('Location', transaction.location!),
+                  if (transaction.recipientOrSender != null)
+                    _buildDetailRow(
+                        'Recipient/Sender', transaction.recipientOrSender!),
+                  if (transaction.availableBalance != null)
+                    _buildDetailRow('Available Balance',
+                        '₹${NumberFormat('#,##,###.##').format(transaction.availableBalance!)}'),
+                  if (transaction.subcategory != null)
+                    _buildDetailRow('Subcategory', transaction.subcategory!),
+                  if (transaction.referenceNumber != null)
+                    _buildDetailRow('Reference', transaction.referenceNumber!),
+
+                  // Anomaly flags
+                  if (transaction.anomalyFlags != null &&
+                      transaction.anomalyFlags!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9500).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.warning_amber,
+                                  color: Color(0xFFFF9500), size: 16),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Anomaly Flags',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFFF9500),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            transaction.anomalyFlags!.join(', '),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFFFF9500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -808,6 +911,37 @@ class _AppleStyleTransactionsPageState
                       ],
                     ),
                   ),
+
+                  // LLM Insights
+                  if (transaction.llmInsights != null) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'AI Insights',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        transaction.llmInsights!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF8E8E93),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+
                   const SizedBox(height: 24),
                   if (transaction.smsContent != null) ...[
                     const Text(

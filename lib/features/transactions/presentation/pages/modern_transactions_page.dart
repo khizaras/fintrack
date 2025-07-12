@@ -5,8 +5,10 @@ import 'package:shimmer/shimmer.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/utils/string_utils.dart';
 import '../../domain/entities/transaction.dart';
 import '../bloc/transaction_bloc.dart';
+import '../widgets/llm_progress_dialog.dart';
 
 class ModernTransactionsPage extends StatefulWidget {
   const ModernTransactionsPage({super.key});
@@ -53,29 +55,76 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primaryColor.withOpacity(0.1),
-              Colors.white,
-            ],
+    return BlocListener<TransactionBloc, TransactionState>(
+      listener: (context, state) {
+        if (state is SmsProcessingWithProgress) {
+          // Show progress dialog
+          _showLLMProgressDialog(context, state);
+        } else if (state is SmsProcessed) {
+          // Hide progress dialog if showing
+          Navigator.of(context).popUntil((route) => route.isFirst);
+
+          // Show success message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${state.transactionsFound} transactions found'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (state is TransactionError) {
+          // Hide progress dialog if showing
+          Navigator.of(context).popUntil((route) => route.isFirst);
+
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.primaryColor.withOpacity(0.1),
+                Colors.white,
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _buildModernAppBar(),
+                _buildFilterSection(),
+                Expanded(child: _buildTransactionsList()),
+              ],
+            ),
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildModernAppBar(),
-              _buildFilterSection(),
-              Expanded(child: _buildTransactionsList()),
-            ],
-          ),
-        ),
+        floatingActionButton: _buildFloatingActionButton(),
       ),
-      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  void _showLLMProgressDialog(
+      BuildContext context, SmsProcessingWithProgress state) {
+    // Only show dialog if it's not already showing
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => LLMProgressDialog(
+        current: state.current,
+        total: state.total,
+        currentItem: state.currentItem,
+      ),
     );
   }
 
@@ -223,6 +272,10 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
       builder: (context, state) {
         if (state is TransactionLoading) {
           return _buildShimmerLoading();
+        } else if (state is SmsProcessing) {
+          return _buildProcessingState();
+        } else if (state is SmsProcessingWithProgress) {
+          return _buildProgressState(state);
         } else if (state is TransactionLoaded) {
           if (state.transactions.isEmpty) {
             return _buildEmptyState();
@@ -420,24 +473,63 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
                         color: isIncome ? Colors.green : Colors.red,
                       ),
                     ),
-                    if (transaction.smsContent != null)
-                      Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'SMS',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.blue[700],
-                            fontWeight: FontWeight.w500,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (transaction.smsContent != null)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4, right: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'SMS',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.blue[700],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        if (transaction.confidenceScore != null)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4, right: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'AI ${(transaction.confidenceScore! * 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.green[700],
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        if (transaction.anomalyFlags != null &&
+                            transaction.anomalyFlags!.isNotEmpty)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(
+                              Icons.warning_amber,
+                              size: 12,
+                              color: Colors.orange[700],
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
               ],
@@ -721,7 +813,111 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
               _buildDetailRow('Bank', transaction.bankName!),
             if (transaction.accountNumber != null)
               _buildDetailRow('Account',
-                  '**** ${transaction.accountNumber!.substring(transaction.accountNumber!.length - 4)}'),
+                  StringUtils.formatAccountNumber(transaction.accountNumber)),
+
+            // LLM Enhanced fields
+            if (transaction.confidenceScore != null)
+              _buildDetailRow('AI Confidence',
+                  '${(transaction.confidenceScore! * 100).toStringAsFixed(1)}%'),
+            if (transaction.transactionMethod != null)
+              _buildDetailRow('Payment Method', transaction.transactionMethod!),
+            if (transaction.location != null)
+              _buildDetailRow('Location', transaction.location!),
+            if (transaction.recipientOrSender != null)
+              _buildDetailRow(
+                  'Recipient/Sender', transaction.recipientOrSender!),
+            if (transaction.availableBalance != null)
+              _buildDetailRow('Available Balance',
+                  '₹${NumberFormat('#,##,###.##').format(transaction.availableBalance!)}'),
+            if (transaction.subcategory != null)
+              _buildDetailRow('Subcategory', transaction.subcategory!),
+            if (transaction.referenceNumber != null)
+              _buildDetailRow('Reference', transaction.referenceNumber!),
+
+            // Anomaly flags
+            if (transaction.anomalyFlags != null &&
+                transaction.anomalyFlags!.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning_amber,
+                            color: Colors.orange[700], size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Anomaly Flags',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.orange[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      transaction.anomalyFlags!.join(', '),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // LLM Insights
+            if (transaction.llmInsights != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.psychology,
+                            color: Colors.blue[700], size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'AI Insights',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      transaction.llmInsights!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // SMS Content section
             if (transaction.smsContent != null) ...[
@@ -923,6 +1119,67 @@ class _ModernTransactionsPageState extends State<ModernTransactionsPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProcessingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Processing SMS messages...',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressState(SmsProcessingWithProgress state) {
+    return Column(
+      children: [
+        SMSProgressIndicator(
+          current: state.current,
+          total: state.total,
+          currentItem: state.currentItem,
+        ),
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.psychology,
+                  size: 64,
+                  color: AppColors.primaryColor.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'AI is analyzing your SMS messages',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.grey[700],
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This will improve transaction accuracy and insights',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey[500],
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

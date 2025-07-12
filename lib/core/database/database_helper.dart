@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5, // Updated to version 5 for LLM enhancements
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -51,7 +51,7 @@ class DatabaseHelper {
       )
     ''');
 
-    // Transactions table
+    // Transactions table with enhanced LLM fields
     await db.execute('''
       CREATE TABLE transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,6 +67,16 @@ class DatabaseHelper {
         merchant_name TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
+        recipient_or_sender TEXT,
+        available_balance REAL,
+        subcategory TEXT,
+        transaction_method TEXT,
+        location TEXT,
+        reference_number TEXT,
+        confidence_score REAL,
+        anomaly_flags TEXT,
+        llm_insights TEXT,
+        transaction_time TEXT,
         FOREIGN KEY (user_id) REFERENCES users (id),
         FOREIGN KEY (category_id) REFERENCES categories (id)
       )
@@ -177,6 +187,36 @@ class DatabaseHelper {
         print('Database upgrade v4: Removed AI fields from transactions table');
       } catch (e) {
         print('Database upgrade v4 error: $e');
+      }
+    }
+
+    if (oldVersion < 5) {
+      // Add LLM enhancement fields to transactions table
+      try {
+        await db.execute(
+            'ALTER TABLE transactions ADD COLUMN recipient_or_sender TEXT');
+        await db.execute(
+            'ALTER TABLE transactions ADD COLUMN available_balance REAL');
+        await db
+            .execute('ALTER TABLE transactions ADD COLUMN subcategory TEXT');
+        await db.execute(
+            'ALTER TABLE transactions ADD COLUMN transaction_method TEXT');
+        await db.execute('ALTER TABLE transactions ADD COLUMN location TEXT');
+        await db.execute(
+            'ALTER TABLE transactions ADD COLUMN reference_number TEXT');
+        await db.execute(
+            'ALTER TABLE transactions ADD COLUMN confidence_score REAL');
+        await db
+            .execute('ALTER TABLE transactions ADD COLUMN anomaly_flags TEXT');
+        await db
+            .execute('ALTER TABLE transactions ADD COLUMN llm_insights TEXT');
+        await db.execute(
+            'ALTER TABLE transactions ADD COLUMN transaction_time TEXT');
+
+        print(
+            'Database upgrade v5: Added LLM enhancement fields to transactions table');
+      } catch (e) {
+        print('Database upgrade v5 error: $e');
       }
     }
   }

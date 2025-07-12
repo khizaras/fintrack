@@ -4,7 +4,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../home/presentation/pages/modern_home_page.dart';
 import '../../../transactions/presentation/pages/apple_style_transactions_page.dart';
 import '../../../budgets/presentation/pages/budgets_page.dart';
-import '../../../insights/presentation/pages/apple_style_insights_dashboard.dart';
+import '../../../insights/presentation/pages/enterprise_insights_dashboard.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -20,7 +20,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     const ModernHomePage(),
     const AppleStyleTransactionsPage(),
     const BudgetsPage(),
-    const AppleStyleInsightsDashboard(),
+    const EnterpriseInsightsDashboard(), // Updated to enterprise dashboard
   ];
 
   @override

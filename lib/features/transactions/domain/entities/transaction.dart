@@ -17,6 +17,18 @@ class Transaction extends Equatable {
   final DateTime updatedAt;
   final Category? categoryEntity; // Optional category object
 
+  // 🤖 Enhanced LLM-extracted attributes
+  final String? recipientOrSender;
+  final double? availableBalance;
+  final String? subcategory;
+  final String? transactionMethod; // UPI, ATM, POS, Online, Transfer
+  final String? location;
+  final String? referenceNumber;
+  final double? confidenceScore;
+  final List<String>? anomalyFlags;
+  final String? llmInsights;
+  final DateTime? transactionTime; // Separate time component
+
   const Transaction({
     this.id,
     required this.userId,
@@ -32,6 +44,17 @@ class Transaction extends Equatable {
     required this.createdAt,
     required this.updatedAt,
     this.categoryEntity,
+    // Enhanced LLM attributes
+    this.recipientOrSender,
+    this.availableBalance,
+    this.subcategory,
+    this.transactionMethod,
+    this.location,
+    this.referenceNumber,
+    this.confidenceScore,
+    this.anomalyFlags,
+    this.llmInsights,
+    this.transactionTime,
   });
 
   /// Get category name - either from categoryEntity or fallback to 'Other'
@@ -52,6 +75,17 @@ class Transaction extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     Category? categoryEntity,
+    // Enhanced LLM attributes
+    String? recipientOrSender,
+    double? availableBalance,
+    String? subcategory,
+    String? transactionMethod,
+    String? location,
+    String? referenceNumber,
+    double? confidenceScore,
+    List<String>? anomalyFlags,
+    String? llmInsights,
+    DateTime? transactionTime,
   }) {
     return Transaction(
       id: id ?? this.id,
@@ -68,6 +102,17 @@ class Transaction extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       categoryEntity: categoryEntity ?? this.categoryEntity,
+      // Enhanced LLM attributes
+      recipientOrSender: recipientOrSender ?? this.recipientOrSender,
+      availableBalance: availableBalance ?? this.availableBalance,
+      subcategory: subcategory ?? this.subcategory,
+      transactionMethod: transactionMethod ?? this.transactionMethod,
+      location: location ?? this.location,
+      referenceNumber: referenceNumber ?? this.referenceNumber,
+      confidenceScore: confidenceScore ?? this.confidenceScore,
+      anomalyFlags: anomalyFlags ?? this.anomalyFlags,
+      llmInsights: llmInsights ?? this.llmInsights,
+      transactionTime: transactionTime ?? this.transactionTime,
     );
   }
 
@@ -86,6 +131,17 @@ class Transaction extends Equatable {
       'merchant_name': merchantName,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      // Enhanced LLM attributes
+      'recipient_or_sender': recipientOrSender,
+      'available_balance': availableBalance,
+      'subcategory': subcategory,
+      'transaction_method': transactionMethod,
+      'location': location,
+      'reference_number': referenceNumber,
+      'confidence_score': confidenceScore,
+      'anomaly_flags': anomalyFlags?.join(','),
+      'llm_insights': llmInsights,
+      'transaction_time': transactionTime?.toIso8601String(),
     };
   }
 
@@ -107,6 +163,19 @@ class Transaction extends Equatable {
       merchantName: map['merchant_name'],
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      // Enhanced LLM attributes
+      recipientOrSender: map['recipient_or_sender'],
+      availableBalance: map['available_balance']?.toDouble(),
+      subcategory: map['subcategory'],
+      transactionMethod: map['transaction_method'],
+      location: map['location'],
+      referenceNumber: map['reference_number'],
+      confidenceScore: map['confidence_score']?.toDouble(),
+      anomalyFlags: map['anomaly_flags']?.split(','),
+      llmInsights: map['llm_insights'],
+      transactionTime: map['transaction_time'] != null
+          ? DateTime.parse(map['transaction_time'])
+          : null,
     );
   }
 
@@ -126,6 +195,17 @@ class Transaction extends Equatable {
         createdAt,
         updatedAt,
         categoryEntity,
+        // Enhanced LLM attributes
+        recipientOrSender,
+        availableBalance,
+        subcategory,
+        transactionMethod,
+        location,
+        referenceNumber,
+        confidenceScore,
+        anomalyFlags,
+        llmInsights,
+        transactionTime,
       ];
 }
 

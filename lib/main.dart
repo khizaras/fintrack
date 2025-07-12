@@ -4,13 +4,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_strings.dart';
 import 'core/database/database_helper.dart';
+import 'core/di/service_locator.dart';
 import 'features/transactions/data/repositories/transaction_repository.dart';
 import 'features/transactions/presentation/bloc/transaction_bloc.dart';
-import 'features/sms/data/services/sms_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Initialize services and dependencies with error handling
+    await initializeServices();
+    print('✅ Services initialized successfully');
+  } catch (e) {
+    print('❌ Service initialization failed: $e');
+    print('🔄 App will continue with limited functionality');
+  }
 
   // Initialize database, SMS patterns, and real data
   await _initializeApp();
@@ -34,7 +43,7 @@ Future<void> _initializeApp() async {
 
 Future<void> _initializeRealData() async {
   try {
-    final smsService = SmsService();
+    final smsService = getSmsService();
 
     // Check if we have SMS permissions
     final hasPermission = await smsService.checkSmsPermissions();
@@ -42,8 +51,19 @@ Future<void> _initializeRealData() async {
     if (hasPermission) {
       print('📱 Reading SMS messages for transaction extraction...');
       // Read SMS messages and extract transactions
-      final transactions = await smsService.readAllSmsTransactions();
-      print('✅ Extracted ${transactions.length} transactions from SMS');
+      List<dynamic> transactions;
+
+      if (isEnhancedSmsServiceAvailable) {
+        // Use LLM-enhanced SMS service
+        transactions =
+            await (smsService as dynamic).readAllSmsTransactionsWithLLM();
+        print(
+            '✅ Extracted ${transactions.length} transactions from SMS using LLM analysis');
+      } else {
+        // Use regular SMS service
+        transactions = await (smsService as dynamic).readAllSmsTransactions();
+        print('✅ Extracted ${transactions.length} transactions from SMS');
+      }
     } else {
       print('⚠️ SMS permission not granted. Will show demo data in analytics.');
     }
@@ -113,8 +133,8 @@ class FinTrackApp extends StatelessWidget {
       providers: [
         BlocProvider<TransactionBloc>(
           create: (context) => TransactionBloc(
-            transactionRepository: TransactionRepository(),
-            smsService: SmsService(),
+            transactionRepository: serviceLocator<TransactionRepository>(),
+            smsService: getSmsService(),
           )..add(const LoadTransactions()),
         ),
       ],

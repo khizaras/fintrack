@@ -351,7 +351,8 @@ class IntelligentSmsClassifier {
     String? merchantName,
   }) async {
     try {
-      _logger.i('Classifying transaction: ${smsContent.substring(0, 50)}...');
+      _logger.i(
+          'Classifying transaction: ${smsContent.length > 50 ? smsContent.substring(0, 50) : smsContent}...');
 
       final categoryId = _intelligentCategoryClassification(
         smsContent,
